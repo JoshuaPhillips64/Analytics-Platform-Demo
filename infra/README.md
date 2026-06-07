@@ -6,9 +6,10 @@ role** (no static keys), least-privilege security groups, and a **$25 AWS Budget
 alert**. You run `terraform plan` / `apply`; nothing here spends money until you do.
 
 ## Design decisions (and why)
-- **Default VPC + public subnets.** A custom VPC with private subnets needs a NAT
-  gateway (~$32/mo) which would break the <$50/mo rule. Security comes from tight
-  security groups, not network topology.
+- **Dedicated NAT-free VPC.** A small VPC (`vpc.tf`) with two public subnets across
+  AZs + an internet gateway. No NAT gateway (that's ~$32/mo and would break the
+  <$50/mo rule). RDS/EC2 sit in public subnets, secured by tight security groups,
+  not network topology.
 - **SSM Session Manager, not SSH.** The EC2 role attaches `AmazonSSMManagedInstanceCore`,
   so you get a shell with **no key pair and no inbound port 22**. SSH is opt-in via
   `ssh_allowed_cidrs`.
@@ -103,7 +104,7 @@ terraform destroy
 | S3 (raw, <1 GB) | ~$0 | ~$0 |
 | RDS db.t4g.micro (20 GB gp3) | $0 stopped | ~$12–15 + storage |
 | EC2 t3.small | ~$0 stopped | ~$15 |
-| Default VPC networking (no NAT) | $0 | $0 |
+| VPC networking (IGW, no NAT) | $0 | $0 |
 | Budget alert | $0 | $0 |
 
 Free-tier eligible accounts pay ~$0; otherwise <$10/mo if you stop instances,

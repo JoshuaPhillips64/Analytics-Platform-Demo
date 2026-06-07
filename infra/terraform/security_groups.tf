@@ -4,7 +4,7 @@
 resource "aws_security_group" "ec2" {
   name        = "${var.name_prefix}-ec2"
   description = "Airflow host: egress all; optional SSH from allowlist"
-  vpc_id      = data.aws_vpc.default.id
+  vpc_id      = aws_vpc.main.id
 
   egress {
     description = "All outbound (S3, Alpha Vantage, package mirrors, SSM)"
@@ -33,7 +33,7 @@ resource "aws_security_group_rule" "ec2_ssh" {
 resource "aws_security_group" "rds" {
   name        = "${var.name_prefix}-rds"
   description = "Postgres 5432 from EC2 SG + allowlisted CIDRs"
-  vpc_id      = data.aws_vpc.default.id
+  vpc_id      = aws_vpc.main.id
 
   egress {
     description = "All outbound"
