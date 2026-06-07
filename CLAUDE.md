@@ -1,6 +1,6 @@
 # CLAUDE.md
 
-This file is auto-loaded by Claude Code. Read it fully before doing anything. Then read, in order:
+Read this file fully before doing anything. Then read, in order:
 1. `docs/PROJECT_SPEC.md` — the full spec (architecture, models, tests, cost model).
 2. `instructions/PORTING_FROM_LEGACY.md` — exactly what to copy from the old codebase (and what NOT to).
 3. `instructions/BUILD_PLAN.md` — the phased task list you will execute.
@@ -8,7 +8,7 @@ This file is auto-loaded by Claude Code. Read it fully before doing anything. Th
 ---
 
 ## What this is
-A portfolio project for an **Analytics Engineer** role. It ingests equities data from Alpha Vantage, archives it on S3, loads it into Postgres on RDS, transforms it into tested/documented/point-in-time-correct data models with **dbt Core**, orchestrates with self-hosted **Airflow**, ships on GitHub with free CI, and serves three teams via **Hex** (free tier).
+This project ingests equities data from Alpha Vantage, archives it on S3, loads it into Postgres on RDS, transforms it into tested/documented/point-in-time-correct data models with **dbt Core**, orchestrates with self-hosted **Airflow**, ships on GitHub with free CI, and serves three teams via **Hex** (free tier).
 
 It is a rebuild of an existing working project (`stock_prediction_pipelines`). **The full original codebase is included in this repo at `_legacy_reference/` (read-only).** The old project mixes ML/app/infra and does transformation in pandas. We keep its **working API-extraction code** and throw away its transformation approach — `instructions/PORTING_FROM_LEGACY.md` is the exact, function-by-function map of what to copy, what to fix, and what to ignore. Read the legacy files directly when porting; do not guess.
 
