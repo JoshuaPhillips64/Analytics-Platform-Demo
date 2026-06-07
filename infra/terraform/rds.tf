@@ -4,15 +4,17 @@ resource "aws_db_subnet_group" "main" {
   tags       = { Name = "${var.name_prefix}-db-subnets" }
 }
 
-# Parameter group that forces TLS. Connect with sslmode=require (see README/profiles).
+# Parameter group. SSL is supported (connect with sslmode=require) but NOT forced
+# — forcing it (rds.force_ssl=1) blocks BI tools / clients that don't negotiate
+# TLS. Set to "1" to require TLS once all clients support it.
 resource "aws_db_parameter_group" "main" {
   name        = "${var.name_prefix}-pg16"
   family      = "postgres16"
-  description = "Force SSL for ${var.name_prefix}"
+  description = "Postgres params for ${var.name_prefix}"
 
   parameter {
     name  = "rds.force_ssl"
-    value = "1"
+    value = "0"
   }
 }
 
