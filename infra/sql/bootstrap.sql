@@ -20,6 +20,10 @@ SELECT format('CREATE ROLE dbt LOGIN PASSWORD %L', :'dbt_password')
 WHERE NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'dbt')
 \gexec
 
+-- On RDS the master user is rds_superuser (not a true superuser), so it must be
+-- a member of dbt to create objects owned by dbt (AUTHORIZATION dbt below).
+GRANT dbt TO CURRENT_USER;
+
 -- Schemas owned by the dbt role.
 CREATE SCHEMA IF NOT EXISTS raw          AUTHORIZATION dbt;
 CREATE SCHEMA IF NOT EXISTS staging      AUTHORIZATION dbt;
