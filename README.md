@@ -89,8 +89,17 @@ erDiagram
         numeric beta
         numeric reported_eps
     }
-    DIM_SECURITY { text symbol; text company_name; text sector; boolean is_active }
-    DIM_DATE { date date_day; boolean is_trading_day; integer quarter }
+    DIM_SECURITY {
+        text symbol
+        text company_name
+        text sector
+        boolean is_active
+    }
+    DIM_DATE {
+        date date_day
+        boolean is_trading_day
+        integer quarter
+    }
 ```
 
 Layers: `staging` (views, 1:1 with sources) → `intermediate` (returns, pivoted technicals, daily sentiment, forward-filled macro, point-in-time fundamentals, sector performance, reported earnings) → `marts` (dims as tables, fact as incremental). See `dbt docs generate` for full lineage.
@@ -180,7 +189,7 @@ Three Hex Community apps read `marts.*` only (governance story). Setup + the exa
 2. **Risk** — watchlist risk monitor: rolling vol, beta, max drawdown, distance from 52-week high (`mart_risk_monitor`).
 3. **Leadership** — watchlist performance: Day/WTD/MTD/YTD returns, top movers, sentiment snapshot (`mart_watchlist_daily`).
 
-> _Screenshots: TODO — capture once the Hex apps are connected to RDS._
+![Hex dashboard reading marts.* on RDS](docs/img/hex-dashboard.png)
 
 ---
 
