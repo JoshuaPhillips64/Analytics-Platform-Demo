@@ -37,6 +37,8 @@ orchestration/plugins/__pycache__/
 *.tfvars
 *.tfvars.json
 !*.tfvars.example
+tfplan
+*.tfplan
 crash.log
 crash.*.log
 override.tf
