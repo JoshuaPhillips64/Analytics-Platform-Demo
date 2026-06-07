@@ -48,35 +48,51 @@ terraform output
 
 ## 3. Bootstrap the database (schemas + dbt role)
 RDS takes a few minutes to become available. Then, from a machine whose IP is in
-`db_allowed_cidrs` (your laptop):
+`db_allowed_cidrs` (your laptop). Pass the dbt password as a RAW value (no
+surrounding quotes) — psql quotes it safely via `format(%L, ...)`.
+
+**PowerShell (Windows):**
+```powershell
+$RDS_ADDR = terraform output -raw rds_address
+$env:PGPASSWORD = "<your db_master_password>"   # else psql prompts for it
+psql "host=$RDS_ADDR port=5432 dbname=equities user=postgres sslmode=require" `
+  -v dbt_password="DBTP4SS%#" `
+  -f ../sql/bootstrap.sql
+```
+
+**bash/zsh (macOS/Linux):**
 ```bash
 RDS_ADDR=$(terraform output -raw rds_address)
 psql "host=$RDS_ADDR port=5432 dbname=equities user=postgres sslmode=require" \
-  -v dbt_password="'choose-a-strong-dbt-password'" \
+  -v dbt_password='DBTP4SS%#' \
   -f ../sql/bootstrap.sql
 ```
-(`-v ... "'...'"` wraps the password so it becomes a SQL string literal. Save the
-dbt password — Phase 3 puts it in the dbt `profiles.yml`, never in git.)
+Save the dbt password — Phase 3 puts it in the dbt `profiles.yml`, never in git.
 
 ## 4. Verify the Phase 1 GATE
-```bash
+
+**PowerShell (Windows):**
+```powershell
 # (a) psql connects and the four schemas exist
 psql "host=$RDS_ADDR port=5432 dbname=equities user=postgres sslmode=require" -c '\dn'
 #  -> expect: raw, staging, intermediate, marts (owned by dbt)
 
 # (b) EC2 reaches S3 via its instance role, with NO static keys
-INSTANCE_ID=$(terraform output -raw ec2_instance_id)
-BUCKET=$(terraform output -raw s3_raw_bucket)
-aws ssm start-session --target "$INSTANCE_ID"
-#   then ON the instance:
-#   aws sts get-caller-identity          # shows the assumed-role ARN, not a user key
-#   aws s3 ls s3://<BUCKET>              # succeeds (empty listing is fine)
+$INSTANCE_ID = terraform output -raw ec2_instance_id
+$BUCKET      = terraform output -raw s3_raw_bucket
+aws ssm start-session --target $INSTANCE_ID
+#   then ON the instance (Linux shell):
+#   aws sts get-caller-identity     # shows the assumed-role ARN, not a user key
+#   aws s3 ls s3://<BUCKET>         # succeeds (empty listing is fine)
 #   exit
 
 # (c) Budget alert active
-aws budgets describe-budgets --account-id "$(aws sts get-caller-identity --query Account --output text)" \
+$ACCT = aws sts get-caller-identity --query Account --output text
+aws budgets describe-budgets --account-id $ACCT `
   --query "Budgets[?BudgetName=='equities-analytics-monthly'].BudgetLimit"
 ```
+(bash: replace `$VAR = ...` with `VAR=$(...)` and backticks with `\`.)
+
 Gate passes when (a) shows four schemas, (b) `aws s3 ls` works from the role, and
 (c) the budget exists.
 
@@ -85,10 +101,10 @@ This is a couple-of-days project — **stop RDS and EC2 whenever you're not buil
 or demoing** (golden rule #6):
 ```bash
 aws rds stop-db-instance --db-instance-identifier equities-analytics-pg
-aws ec2 stop-instances --instance-ids "$INSTANCE_ID"
+aws ec2 stop-instances --instance-ids <INSTANCE_ID>
 # restart:
 aws rds start-db-instance --db-instance-identifier equities-analytics-pg
-aws ec2 start-instances --instance-ids "$INSTANCE_ID"
+aws ec2 start-instances --instance-ids <INSTANCE_ID>
 ```
 RDS auto-restarts after 7 days stopped — just stop it again. (Alternative for $0:
 run Airflow locally in Docker per `orchestration/` and skip the EC2 entirely.)
