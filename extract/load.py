@@ -123,8 +123,13 @@ def ingest_daily_prices(
     bucket: str,
     symbol: str,
     run_date: str,
+    *,
+    prices_function: str = "TIME_SERIES_DAILY",
+    prices_outputsize: str = "compact",
 ) -> int:
-    payload = endpoints.fetch_daily_prices(client, symbol)
+    payload = endpoints.fetch_daily_prices(
+        client, symbol, function=prices_function, outputsize=prices_outputsize
+    )
     key = s3.archive_response(
         bucket, "daily_prices", symbol, run_date, payload, s3_client=s3_client
     )

@@ -121,6 +121,8 @@ def run(args: argparse.Namespace, settings: Settings) -> int:
                     run_date,
                     time_from=time_from,
                     time_to=time_to,
+                    prices_function=settings.av_prices_function,
+                    prices_outputsize=settings.av_prices_outputsize,
                 )
                 logger.info("%s[%s]: %d rows", ep, symbol, n)
                 total += n
@@ -143,9 +145,20 @@ def _ingest_symbol_endpoint(
     *,
     time_from: str | None,
     time_to: str | None,
+    prices_function: str,
+    prices_outputsize: str,
 ) -> int:
     if ep == "prices":
-        return load.ingest_daily_prices(client, engine, s3_client, bucket, symbol, run_date)
+        return load.ingest_daily_prices(
+            client,
+            engine,
+            s3_client,
+            bucket,
+            symbol,
+            run_date,
+            prices_function=prices_function,
+            prices_outputsize=prices_outputsize,
+        )
     if ep in INDICATORS:
         return load.ingest_technical(client, engine, s3_client, bucket, symbol, ep, run_date)
     if ep == "overview":

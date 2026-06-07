@@ -24,11 +24,17 @@ class Settings(BaseSettings):
     # --- Alpha Vantage ---
     alpha_vantage_api_key: str = Field(..., description="Alpha Vantage API key")
     av_base_url: str = "https://www.alphavantage.co/query"
-    # Premium tier = 75 req/min; free = 5/min. Drives the client's min interval.
-    av_requests_per_minute: int = 75
+    # Free tier = 5 req/min, 25/day; premium = 75 req/min. Drives the client interval.
+    av_requests_per_minute: int = 5
     av_request_timeout_s: int = 30
     av_max_retries: int = 5
     av_rate_limit_backoff_s: int = 60
+    # Prices endpoint: free "TIME_SERIES_DAILY" (non-adjusted) vs premium
+    # "TIME_SERIES_DAILY_ADJUSTED" (adds adjusted_close/dividend/split). One-line
+    # switch when premium is active.
+    av_prices_function: str = "TIME_SERIES_DAILY"
+    # "compact" = latest ~100 points (free); "full" = whole history (premium).
+    av_prices_outputsize: str = "compact"
 
     # --- S3 raw archive ---
     s3_bucket: str = Field(..., description="Raw-archive S3 bucket name")

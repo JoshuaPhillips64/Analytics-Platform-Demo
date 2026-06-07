@@ -71,9 +71,20 @@ ECONOMIC_SPECS: dict[str, EconomicSpec] = {
 }
 
 
-def fetch_daily_prices(client: AlphaVantageClient, symbol: str) -> dict[str, Any]:
-    """Full daily adjusted OHLCV. Used for equities, sector ETFs, and index proxies."""
-    data = client.get("TIME_SERIES_DAILY_ADJUSTED", symbol, {"outputsize": "full"})
+def fetch_daily_prices(
+    client: AlphaVantageClient,
+    symbol: str,
+    function: str = "TIME_SERIES_DAILY",
+    outputsize: str = "compact",
+) -> dict[str, Any]:
+    """Daily OHLCV for equities, sector ETFs, and index proxies.
+
+    ``function``: ``TIME_SERIES_DAILY`` (free) or ``TIME_SERIES_DAILY_ADJUSTED``
+    (premium; adds adjusted close/dividend/split). ``outputsize``: ``compact``
+    (~100 latest points, free) or ``full`` (whole history, premium). Both return
+    the same ``Time Series (Daily)`` shape, so validation is unchanged.
+    """
+    data = client.get(function, symbol, {"outputsize": outputsize})
     return schemas.validate_daily_prices(data, symbol)
 
 

@@ -42,9 +42,15 @@ Decide this on day 0 — it determines your universe and history depth.
 
 ### LOCKED DECISIONS (Phase 0, 2026-06-06)
 
-**Alpha Vantage plan:** **Premium for one backfill.** Buy AV premium (~$49.99/mo, 75 req/min) to run the single historical backfill across the full universe, then **cancel**. Daily incremental loads afterward fit comfortably inside the free tier (25/day, 5/min). This is the "except Alpha Vantage" cost already accepted in the constraints.
+**Alpha Vantage plan:** **Free tier** (revised 2026-06-06, Phase 2). 25 requests/day, 5/min. Implications, accepted:
+- **Prices use `TIME_SERIES_DAILY` (non-adjusted)** — no `adjusted_close`/`dividend`/`split_coefficient`. (`TIME_SERIES_DAILY_ADJUSTED` is premium-only.) The endpoint is config-driven (`AV_PRICES_FUNCTION`), so switching to premium-adjusted later is a one-line `.env` change.
+- **Reduced *active* universe** to fit 25 calls/day (see below); the rest of the seed stays `is_active=false` and is documented but not loaded.
+- **Backfill spread over days** — a day's run targets a subset via `--symbols/--endpoints`; re-runs are idempotent.
+- Originally Phase 0 chose premium for one backfill; revised to free tier to avoid the spend.
 
-**History depth:** **2022-01-01 → present** (~3 years). Use `outputsize=full` on the backfill; daily incrementals thereafter.
+**Active universe (free-tier, `is_active=true`):** equities **KO, JNJ, PG**; index proxy **SPY**; sector ETF **XLP** (Consumer Defensive). Per-equity endpoints: prices, RSI, overview, earnings, news. Indicators beyond RSI (MACD/ADX/BBANDS) are deferred under the daily cap. Daily budget ≈ prices(5) + rsi(3) + overview(3) + earnings(3) + news(3) + economic(3) = ~20 calls.
+
+**History depth:** Free tier is limited to **`outputsize=compact` ≈ latest 100 trading days** (`outputsize=full` is premium, even for `TIME_SERIES_DAILY`). The intended **2022-01-01 → present (~3 years)** with `full` requires premium — a one-line `AV_PRICES_OUTPUTSIZE=full` switch once premium is active. Re-runs are idempotent.
 
 **Universe — 12 equities** (sector-diversified; the watchlist that drives the apps), recorded in `transform/seeds/security_watchlist.csv`:
 
