@@ -29,6 +29,26 @@ from extract.db import create_engine_from_url
 
 logger = logging.getLogger("extract")
 
+# Alpha Vantage free-tier limit messages. Hitting these is expected on the free
+# tier (25/day, premium-only endpoints), so they are treated as soft warnings —
+# the daily pipeline should not go red just because the quota is exhausted.
+_SOFT_AV_LIMIT_HINTS = (
+    "rate limit",
+    "per day",
+    "per minute",
+    "premium endpoint",
+    "premium feature",
+    "higher api call",
+    "api call frequency",
+    "25 requests",
+)
+
+
+def _is_soft_av_limit(exc: Exception) -> bool:
+    message = str(exc).lower()
+    return any(hint in message for hint in _SOFT_AV_LIMIT_HINTS)
+
+
 INDICATORS = list(INDICATOR_SPECS)  # rsi, macd, adx, bbands
 SYMBOL_ENDPOINTS = ["prices", *INDICATORS, "overview", "earnings", "news"]
 ALL_ENDPOINTS = [*SYMBOL_ENDPOINTS, "economic"]
@@ -95,6 +115,7 @@ def run(args: argparse.Namespace, settings: Settings) -> int:
 
     total = 0
     failures = 0
+    soft = 0
 
     # Symbol-independent economic indicators (run once).
     if "economic" in endpoints:
@@ -103,9 +124,13 @@ def run(args: argparse.Namespace, settings: Settings) -> int:
                 n = load.ingest_economic(client, engine, s3_client, bucket, indicator, run_date)
                 logger.info("economic[%s]: %d rows", indicator, n)
                 total += n
-            except Exception:
-                failures += 1
-                logger.exception("economic[%s] failed", indicator)
+            except Exception as exc:
+                if _is_soft_av_limit(exc):
+                    soft += 1
+                    logger.warning("economic[%s] skipped (AV limit): %s", indicator, exc)
+                else:
+                    failures += 1
+                    logger.exception("economic[%s] failed", indicator)
 
     symbol_endpoints = [e for e in endpoints if e in SYMBOL_ENDPOINTS]
     for symbol in symbols:
@@ -126,11 +151,20 @@ def run(args: argparse.Namespace, settings: Settings) -> int:
                 )
                 logger.info("%s[%s]: %d rows", ep, symbol, n)
                 total += n
-            except Exception:
-                failures += 1
-                logger.exception("%s[%s] failed", ep, symbol)
+            except Exception as exc:
+                if _is_soft_av_limit(exc):
+                    soft += 1
+                    logger.warning("%s[%s] skipped (AV limit): %s", ep, symbol, exc)
+                else:
+                    failures += 1
+                    logger.exception("%s[%s] failed", ep, symbol)
 
-    logger.info("DONE: %d rows upserted, %d failures", total, failures)
+    logger.info(
+        "DONE: %d rows upserted, %d hard failures, %d soft (AV-limit) skips",
+        total,
+        failures,
+        soft,
+    )
     return failures
 
 

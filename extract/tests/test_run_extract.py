@@ -25,3 +25,12 @@ def test_parse_args_defaults():
     args = run_extract.parse_args(["--symbols", "KO,JNJ"])
     assert args.symbols == "KO,JNJ"
     assert "economic" in args.endpoints
+
+
+def test_soft_av_limit_classification():
+    soft = Exception("API returned 'Information': standard API rate limit is 25 requests per day")
+    premium = Exception("daily_prices[KO]: API returned 'Information': This is a premium endpoint")
+    hard = Exception("permission denied for database equities")
+    assert run_extract._is_soft_av_limit(soft) is True
+    assert run_extract._is_soft_av_limit(premium) is True
+    assert run_extract._is_soft_av_limit(hard) is False

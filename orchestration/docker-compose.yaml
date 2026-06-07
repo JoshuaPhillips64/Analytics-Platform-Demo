@@ -1,0 +1,92 @@
+# Self-hosted Airflow, LocalExecutor (no Celery/Redis) — the cheapest self-hosted
+# option (golden rule #6). Runs the same on this laptop or the EC2 t3.small.
+#
+#   cp .env.example .env   # fill in DB/AV values
+#   docker compose build
+#   docker compose up airflow-init        # one-time: migrate + create admin user
+#   docker compose up -d                  # scheduler + webserver (UI on :8080)
+#   docker compose run --rm airflow-cli airflow dags test equities_daily   # e2e
+#
+# The project (extract/, transform/ incl. dbt_packages) is mounted read-only; AWS
+# creds are mounted read-only (on EC2 the instance role supplies them instead).
+
+x-airflow-common: &airflow-common
+  build:
+    context: .
+    dockerfile: Dockerfile
+  environment: &airflow-common-env
+    AIRFLOW__CORE__EXECUTOR: LocalExecutor
+    AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@airflow-metadata/airflow
+    AIRFLOW__CORE__LOAD_EXAMPLES: "false"
+    AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION: "true"
+    AIRFLOW__WEBSERVER__EXPOSE_CONFIG: "true"
+    # Project + dbt + AWS wiring for the DAG's tasks.
+    PYTHONPATH: /opt/airflow/project
+    DBT_PROFILES_DIR: /opt/airflow/project/transform
+    AWS_SHARED_CREDENTIALS_FILE: /home/airflow/.aws/credentials
+    AWS_CONFIG_FILE: /home/airflow/.aws/config
+    AWS_REGION: ${AWS_REGION:-us-east-1}
+    S3_BUCKET: ${S3_BUCKET}
+    ALPHA_VANTAGE_API_KEY: ${ALPHA_VANTAGE_API_KEY}
+    AV_REQUESTS_PER_MINUTE: ${AV_REQUESTS_PER_MINUTE:-5}
+    AV_PRICES_FUNCTION: ${AV_PRICES_FUNCTION:-TIME_SERIES_DAILY}
+    AV_PRICES_OUTPUTSIZE: ${AV_PRICES_OUTPUTSIZE:-compact}
+    DB_HOST: ${DB_HOST}
+    DB_PORT: ${DB_PORT:-5432}
+    DB_NAME: ${DB_NAME:-equities}
+    DB_USER: ${DB_USER:-dbt}
+    DB_PASSWORD: ${DB_PASSWORD}
+    DB_SSLMODE: ${DB_SSLMODE:-require}
+  volumes:
+    - ../:/opt/airflow/project:ro
+    - ./dags:/opt/airflow/dags
+    - ./logs:/opt/airflow/logs
+    - ${HOST_AWS_DIR:-~/.aws}:/home/airflow/.aws:ro
+  depends_on:
+    airflow-metadata:
+      condition: service_healthy
+
+services:
+  airflow-metadata:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: airflow
+      POSTGRES_PASSWORD: airflow
+      POSTGRES_DB: airflow
+    volumes:
+      - airflow-metadata-db:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "airflow"]
+      interval: 5s
+      retries: 10
+    restart: unless-stopped
+
+  airflow-init:
+    <<: *airflow-common
+    entrypoint: /bin/bash
+    command:
+      - -c
+      - airflow db migrate && airflow users create --username admin --password admin
+        --firstname a --lastname d --role Admin --email admin@example.com
+    restart: on-failure
+
+  airflow-scheduler:
+    <<: *airflow-common
+    command: scheduler
+    restart: unless-stopped
+
+  airflow-webserver:
+    <<: *airflow-common
+    command: webserver
+    ports:
+      - "8080:8080"
+    restart: unless-stopped
+
+  # One-off CLI runner: `docker compose run --rm airflow-cli airflow dags test equities_daily`
+  airflow-cli:
+    <<: *airflow-common
+    profiles: ["cli"]
+    command: version
+
+volumes:
+  airflow-metadata-db:
