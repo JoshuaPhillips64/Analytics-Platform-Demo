@@ -1,0 +1,30 @@
+# dbt connection profile. No secrets here — values come from the environment
+# (golden rule #10). Export them from your .env before running dbt, e.g.:
+#   set -a; source .env; set +a
+#   dbt build --profiles-dir transform
+# On EC2/CI the same env vars are supplied by the instance role / CI secrets.
+equities_analytics:
+  target: dev
+  outputs:
+    dev:
+      type: postgres
+      host: "{{ env_var('DB_HOST') }}"
+      port: "{{ env_var('DB_PORT', '5432') | int }}"
+      dbname: "{{ env_var('DB_NAME', 'equities') }}"
+      user: "{{ env_var('DB_USER', 'dbt') }}"
+      password: "{{ env_var('DB_PASSWORD') }}"
+      sslmode: "{{ env_var('DB_SSLMODE', 'require') }}"
+      schema: public
+      threads: 4
+
+    # Local Postgres (docker) for fast iteration, and the CI service container.
+    ci:
+      type: postgres
+      host: "{{ env_var('DB_HOST', 'localhost') }}"
+      port: "{{ env_var('DB_PORT', '5432') | int }}"
+      dbname: "{{ env_var('DB_NAME', 'equities') }}"
+      user: "{{ env_var('DB_USER', 'postgres') }}"
+      password: "{{ env_var('DB_PASSWORD', 'postgres') }}"
+      sslmode: "{{ env_var('DB_SSLMODE', 'prefer') }}"
+      schema: public
+      threads: 4

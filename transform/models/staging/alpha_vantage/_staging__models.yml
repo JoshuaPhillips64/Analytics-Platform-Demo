@@ -1,0 +1,109 @@
+version: 2
+
+models:
+  - name: stg_av__daily_prices
+    description: >
+      Daily OHLCV, one row per security per trading day. Typed from the raw jsonb;
+      no business logic. `adjusted_close`/`dividend_amount`/`split_coefficient`
+      are NULL on the free tier (premium-only fields).
+    config:
+      contract: {enforced: false}
+    columns:
+      - name: symbol
+        description: Security ticker.
+        data_tests: [not_null]
+      - name: date
+        description: Trading date. Grain with symbol.
+        data_tests: [not_null]
+      - name: close
+        description: Closing price.
+        data_tests: [not_null]
+    data_tests:
+      - dbt_utils.unique_combination_of_columns:
+          combination_of_columns: [symbol, date]
+
+  - name: stg_av__technical_indicators
+    description: >
+      Long-format technical indicators unioned across RSI/MACD/ADX/BBANDS — one
+      row per (symbol, date, indicator). MACD and BBANDS fan out into multiple
+      indicator rows. Grain: (symbol, date, indicator).
+    columns:
+      - name: symbol
+        data_tests: [not_null]
+      - name: date
+        data_tests: [not_null]
+      - name: indicator
+        description: Indicator name.
+        data_tests:
+          - not_null
+          - accepted_values:
+              values: [rsi, macd, macd_signal, macd_hist, adx, bb_upper, bb_middle, bb_lower]
+    data_tests:
+      - dbt_utils.unique_combination_of_columns:
+          combination_of_columns: [symbol, date, indicator]
+
+  - name: stg_av__company_overview
+    description: >
+      Company fundamentals snapshot, one row per (symbol, loaded_at). Each EL run
+      captures current state; the dbt snapshot turns this into SCD2 history.
+    columns:
+      - name: symbol
+        data_tests: [not_null]
+      - name: loaded_at
+        description: When this fundamentals snapshot was loaded. Grain with symbol.
+        data_tests: [not_null]
+    data_tests:
+      - dbt_utils.unique_combination_of_columns:
+          combination_of_columns: [symbol, loaded_at]
+
+  - name: stg_av__news_sentiment
+    description: >
+      Article-level news sentiment, one row per (symbol, url). Includes the
+      overall article sentiment and the per-ticker sentiment score for this symbol.
+    columns:
+      - name: symbol
+        data_tests: [not_null]
+      - name: url
+        description: Article URL. Grain with symbol.
+        data_tests: [not_null]
+      - name: article_published_at
+        description: Article publish timestamp.
+    data_tests:
+      - dbt_utils.unique_combination_of_columns:
+          combination_of_columns: [symbol, url]
+
+  - name: stg_av__economic_indicators
+    description: >
+      Long-format macro indicators (real GDP, inflation, unemployment), one row
+      per (indicator, period_date).
+    columns:
+      - name: indicator
+        data_tests:
+          - not_null
+          - accepted_values:
+              values: [real_gdp, inflation, unemployment]
+      - name: period_date
+        description: Period date for the indicator value. Grain with indicator.
+        data_tests: [not_null]
+    data_tests:
+      - dbt_utils.unique_combination_of_columns:
+          combination_of_columns: [indicator, period_date]
+
+  - name: stg_av__earnings
+    description: >
+      Annual and quarterly earnings, one row per (symbol, fiscal_date_ending,
+      report_type). Estimate/surprise fields are NULL for annual reports.
+    columns:
+      - name: symbol
+        data_tests: [not_null]
+      - name: fiscal_date_ending
+        data_tests: [not_null]
+      - name: report_type
+        description: annual or quarterly.
+        data_tests:
+          - not_null
+          - accepted_values:
+              values: [annual, quarterly]
+    data_tests:
+      - dbt_utils.unique_combination_of_columns:
+          combination_of_columns: [symbol, fiscal_date_ending, report_type]

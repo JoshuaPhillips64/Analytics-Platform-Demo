@@ -1,0 +1,39 @@
+version: 2
+
+sources:
+  - name: alpha_vantage
+    description: >
+      Raw Alpha Vantage payloads landed 1:1 by the Python EL layer. Each table is
+      keyed on its natural grain with the verbatim API object in a `record` jsonb
+      column plus `source_s3_key` / `loaded_at` lineage. No transformation has
+      happened yet — all typing/cleaning is done in staging.
+    schema: raw
+    loaded_at_field: loaded_at
+
+    tables:
+      - name: av_daily_prices
+        description: "Daily OHLCV per (symbol, date). Free tier = non-adjusted, compact."
+        # Trading calendar: warn if no fresh load in 36h, error at 72h.
+        freshness:
+          warn_after: {count: 36, period: hour}
+          error_after: {count: 72, period: hour}
+      - name: av_rsi
+        description: "RSI(14) technical series per (symbol, date)."
+      - name: av_macd
+        description: "MACD technical series per (symbol, date)."
+      - name: av_adx
+        description: "ADX(14) technical series per (symbol, date)."
+      - name: av_bbands
+        description: "Bollinger Bands(20) technical series per (symbol, date)."
+      - name: av_company_overview
+        description: "Company fundamentals snapshot per symbol (current state at load)."
+      - name: av_news_sentiment
+        description: "Article-level news sentiment per (symbol, url)."
+      - name: av_earnings
+        description: "Annual + quarterly earnings per (symbol, fiscal_date_ending, report_type)."
+      - name: av_real_gdp
+        description: "Quarterly real GDP per period date."
+      - name: av_inflation
+        description: "Annual inflation per period date."
+      - name: av_unemployment
+        description: "Monthly unemployment rate per period date."

@@ -56,7 +56,7 @@ surrounding quotes) — psql quotes it safely via `format(%L, ...)`.
 $RDS_ADDR = terraform output -raw rds_address
 $env:PGPASSWORD = "<your db_master_password>"   # else psql prompts for it
 psql "host=$RDS_ADDR port=5432 dbname=equities user=postgres sslmode=require" `
-  -v dbt_password="DBTP4SS%#" `
+  -v dbt_password="SAMPLE" `
   -f ../sql/bootstrap.sql
 ```
 
@@ -64,7 +64,7 @@ psql "host=$RDS_ADDR port=5432 dbname=equities user=postgres sslmode=require" `
 ```bash
 RDS_ADDR=$(terraform output -raw rds_address)
 psql "host=$RDS_ADDR port=5432 dbname=equities user=postgres sslmode=require" \
-  -v dbt_password='DBTP4SS%#' \
+  -v dbt_password='Sample' \
   -f ../sql/bootstrap.sql
 ```
 Save the dbt password — Phase 3 puts it in the dbt `profiles.yml`, never in git.

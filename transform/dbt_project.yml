@@ -1,0 +1,38 @@
+name: equities_analytics
+version: 1.0.0
+config-version: 2
+
+profile: equities_analytics
+
+model-paths: ["models"]
+seed-paths: ["seeds"]
+test-paths: ["tests"]
+macro-paths: ["macros"]
+snapshot-paths: ["snapshots"]
+
+target-path: target
+clean-targets:
+  - target
+  - dbt_packages
+
+# Layering discipline (golden rule #5): staging/intermediate are views, marts are
+# tables, the fact is incremental. Each layer lands in its own schema.
+models:
+  equities_analytics:
+    staging:
+      +materialized: view
+      +schema: staging
+    intermediate:
+      +materialized: view
+      +schema: intermediate
+    marts:
+      +materialized: table
+      +schema: marts
+
+seeds:
+  equities_analytics:
+    +schema: marts
+
+snapshots:
+  equities_analytics:
+    +target_schema: snapshots

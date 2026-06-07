@@ -1,0 +1,33 @@
+[sqlfluff]
+templater = dbt
+dialect = postgres
+max_line_length = 120
+# Exclude a few opinionated/false-positive-prone rules for dbt+jinja SQL.
+# RF03: false-positive on correlated lateral joins over jsonb set-returning fns.
+exclude_rules = RF04, ST06, RF01, AM04, ST07, LT09, RF03
+
+[sqlfluff:templater:dbt]
+project_dir = transform
+profiles_dir = transform
+profile = equities_analytics
+target = dev
+
+[sqlfluff:indentation]
+indented_joins = false
+indented_using_on = true
+template_blocks_indent = false
+
+[sqlfluff:layout:type:comma]
+line_position = trailing
+
+[sqlfluff:rules:capitalisation.keywords]
+capitalisation_policy = lower
+
+[sqlfluff:rules:capitalisation.functions]
+capitalisation_policy = lower
+
+[sqlfluff:rules:capitalisation.literals]
+capitalisation_policy = lower
+
+[sqlfluff:rules:capitalisation.types]
+extended_capitalisation_policy = lower

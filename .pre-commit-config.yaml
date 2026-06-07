@@ -30,10 +30,8 @@ repos:
       - id: black
         files: ^(extract|infra/scripts)/
 
-  # sqlfluff lints dbt models (postgres dialect, dbt templater). Only runs once
-  # transform/ contains .sql files; see .sqlfluff (added with the dbt project in Phase 3).
-  - repo: https://github.com/sqlfluff/sqlfluff
-    rev: 3.1.0
-    hooks:
-      - id: sqlfluff-lint
-        files: ^transform/models/.*\.sql$
+  # NOTE: sqlfluff uses the dbt templater (see .sqlfluff), which needs a compiled
+  # dbt project + a live Postgres connection — impractical in an isolated pre-commit
+  # env. It is enforced in CI instead (GitHub Actions, with a Postgres service
+  # container; Phase 7). Run locally with:
+  #   set -a; source .env; set +a; sqlfluff lint transform/models
