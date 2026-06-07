@@ -121,7 +121,7 @@ CI re-runs lint + the full `dbt build` (every model and test) on a Postgres serv
 
 ---
 
-## Data scope (free Alpha Vantage tier)
+## Data scope
 
 This build runs on the **free** Alpha Vantage tier, which shapes the dataset. Everything is config-driven, so moving to premium is a one-line `.env` change (`AV_PRICES_FUNCTION`, `AV_PRICES_OUTPUTSIZE`, `AV_REQUESTS_PER_MINUTE`) plus a re-run — no code changes.
 
@@ -163,21 +163,7 @@ docker compose run --rm airflow-cli airflow dags test equities_daily
 - **AWS infra** is Terraform (`infra/terraform/`): S3 + RDS `db.t4g.micro` + EC2 `t3.small` + IAM role + $ budget alert, in a dedicated NAT-free VPC. See `infra/README.md`. **Stop RDS/EC2 when idle.**
 - **CI / branch protection** setup: see `.github/CI_SETUP.md`.
 
----
 
-## Cost
-
-Designed to run under **$50/month** (Alpha Vantage excluded):
-
-| Component | Service | Cost |
-|---|---|---|
-| Raw landing | S3 (<1 GB) | ~$0 |
-| Warehouse | RDS `db.t4g.micro` | $0 free-tier / ~$12–15, **stop when idle** |
-| Orchestration | EC2 `t3.small` self-hosted Airflow | ~$0 stopped / ~$15, or run locally for $0 |
-| Transform / CI / BI | dbt Core · GitHub Actions · Hex Community | $0 |
-| Networking | dedicated VPC, no NAT gateway | $0 |
-
-A $25 AWS budget alert guards against a forgotten running instance.
 
 ---
 
