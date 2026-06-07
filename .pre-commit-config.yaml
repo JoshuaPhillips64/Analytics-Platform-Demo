@@ -1,0 +1,39 @@
+# Pre-commit hooks. Install with: uv run pre-commit install
+# Run on all files with: uv run pre-commit run --all-files
+# (Hook tool environments use whatever Python pre-commit finds on PATH; the
+#  linters target py313 via their own config, so their runtime version is moot.)
+
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.6.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-yaml
+        args: [--allow-multiple-documents]
+      - id: check-added-large-files
+      - id: check-merge-conflict
+      - id: detect-private-key  # belt-and-braces against committing secrets (golden rule #10)
+
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.5.5
+    hooks:
+      - id: ruff
+        args: [--fix]
+        files: ^extract/
+      - id: ruff-format
+        files: ^extract/
+
+  - repo: https://github.com/psf/black
+    rev: 24.8.0
+    hooks:
+      - id: black
+        files: ^extract/
+
+  # sqlfluff lints dbt models (postgres dialect, dbt templater). Only runs once
+  # transform/ contains .sql files; see .sqlfluff (added with the dbt project in Phase 3).
+  - repo: https://github.com/sqlfluff/sqlfluff
+    rev: 3.1.0
+    hooks:
+      - id: sqlfluff-lint
+        files: ^transform/models/.*\.sql$

@@ -1,0 +1,35 @@
+# --- Legacy reference (present on disk for Claude Code to read; NOT committed) ---
+# This keeps the public portfolio repo clean. If you'd rather ship the old code
+# as part of the repo, delete the next line.
+_legacy_reference/
+
+# --- secrets / env ---
+.env
+.env.*
+!.env.example
+*.pem
+
+# --- python ---
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.uv/
+dist/
+build/
+*.egg-info/
+
+# --- dbt ---
+transform/target/
+transform/dbt_packages/
+transform/logs/
+.user.yml
+
+# --- airflow ---
+orchestration/logs/
+orchestration/plugins/__pycache__/
+
+# --- os / editor ---
+.DS_Store
+.idea/
+.vscode/

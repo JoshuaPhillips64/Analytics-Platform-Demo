@@ -1,0 +1,59 @@
+[project]
+name = "equities-analytics-platform"
+version = "0.1.0"
+description = "EL pipeline (Alpha Vantage -> S3 -> RDS Postgres) for a dbt-Core analytics platform. Python extracts/loads only; all transformation lives in dbt."
+authors = [
+    { name = "jphil", email = "jphillips@usserviceanimals.org" },
+]
+readme = "README.md"
+# Golden rule #7: Python 3.13 ONLY. NOT 3.14 (dbt is incompatible).
+requires-python = ">=3.13,<3.14"
+dependencies = [
+    "requests>=2.32",
+    "pydantic>=2.7",
+    "pydantic-settings>=2.3",
+    "tenacity>=8.4",
+    "boto3>=1.34",
+    "psycopg2-binary>=2.9",
+    "SQLAlchemy>=2.0",
+    "pandas>=2.2",
+]
+
+[project.optional-dependencies]
+# Linting, formatting, and testing for the Python EL layer.
+dev = [
+    "ruff>=0.5",
+    "black>=24.4",
+    "pre-commit>=3.7",
+    "pytest>=8.2",
+    "responses>=0.25",
+    "sqlfluff>=3.1",
+    "sqlfluff-templater-dbt>=3.1",
+]
+# dbt stack. Golden rule #7: dbt-core >= 1.10 is the minimum that supports Python 3.13.
+# Pinned loosely here; the transform/ project owns the authoritative packages.yml.
+dbt = [
+    "dbt-core>=1.10",
+    "dbt-postgres>=1.10",
+]
+
+# This repo is an application, not a distributable library: do not build/install it as a package.
+[tool.uv]
+package = false
+
+[tool.ruff]
+target-version = "py313"
+line-length = 100
+src = ["extract"]
+
+[tool.ruff.lint]
+# pycodestyle, Pyflakes, isort, pyupgrade, flake8-bugbear, flake8-simplify.
+select = ["E", "F", "I", "UP", "B", "SIM"]
+
+[tool.black]
+target-version = ["py313"]
+line-length = 100
+
+[tool.pytest.ini_options]
+testpaths = ["extract/tests"]
+addopts = "-q"

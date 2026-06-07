@@ -1,0 +1,13 @@
+symbol,company_name,is_active
+AAPL,Apple Inc.,true
+MSFT,Microsoft Corporation,true
+JNJ,Johnson & Johnson,true
+PFE,Pfizer Inc.,true
+JPM,JPMorgan Chase & Co.,true
+KO,The Coca-Cola Company,true
+PG,The Procter & Gamble Company,true
+XOM,Exxon Mobil Corporation,true
+CVX,Chevron Corporation,true
+HD,The Home Depot Inc.,true
+CAT,Caterpillar Inc.,true
+NEE,NextEra Energy Inc.,true
