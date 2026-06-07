@@ -3,7 +3,7 @@ name = "equities-analytics-platform"
 version = "0.1.0"
 description = "EL pipeline (Alpha Vantage -> S3 -> RDS Postgres) for a dbt-Core analytics platform. Python extracts/loads only; all transformation lives in dbt."
 authors = [
-    { name = "jphil", email = "jphillips@usserviceanimals.org" },
+    { name = "Josh Phillips" },
 ]
 readme = "README.md"
 # Golden rule #7: Python 3.13 ONLY. NOT 3.14 (dbt is incompatible).
