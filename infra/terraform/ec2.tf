@@ -44,4 +44,10 @@ resource "aws_instance" "airflow" {
   }
 
   tags = { Name = "${var.name_prefix}-airflow" }
+
+  # The AL2023 AMI id from SSM drifts over time; don't replace a running host on
+  # unrelated applies (e.g. a security-group change). Recreate deliberately.
+  lifecycle {
+    ignore_changes = [ami]
+  }
 }
