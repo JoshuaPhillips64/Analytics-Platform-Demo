@@ -24,15 +24,17 @@ WHERE NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'dbt')
 -- a member of dbt to create objects owned by dbt (AUTHORIZATION dbt below).
 GRANT dbt TO CURRENT_USER;
 
--- Schemas owned by the dbt role.
+-- Schemas owned by the dbt role. `snapshots` holds dbt SCD2 snapshots; it is
+-- pre-created here so dbt doesn't need CREATE-on-database privileges.
 CREATE SCHEMA IF NOT EXISTS raw          AUTHORIZATION dbt;
 CREATE SCHEMA IF NOT EXISTS staging      AUTHORIZATION dbt;
 CREATE SCHEMA IF NOT EXISTS intermediate AUTHORIZATION dbt;
 CREATE SCHEMA IF NOT EXISTS marts        AUTHORIZATION dbt;
+CREATE SCHEMA IF NOT EXISTS snapshots    AUTHORIZATION dbt;
 
 -- Let dbt connect to the database and work in each schema.
 GRANT CONNECT ON DATABASE equities TO dbt;
-GRANT USAGE, CREATE ON SCHEMA raw, staging, intermediate, marts TO dbt;
+GRANT USAGE, CREATE ON SCHEMA raw, staging, intermediate, marts, snapshots TO dbt;
 
 -- Confirm.
 \echo 'Schemas present:'

@@ -1,0 +1,81 @@
+version: 2
+
+models:
+  - name: int_prices__daily_returns
+    description: >
+      Per (symbol, date): daily/log returns, 5/20/60-day returns, 20-day rolling
+      volatility, and 52-week high/low (window functions over non-adjusted close).
+    columns:
+      - name: symbol
+        data_tests: [not_null]
+      - name: date
+        data_tests: [not_null]
+    data_tests:
+      - dbt_utils.unique_combination_of_columns:
+          combination_of_columns: [symbol, date]
+
+  - name: int_technicals__pivoted
+    description: >
+      One row per (symbol, date) with rsi/macd/macd_signal/macd_hist/adx/
+      bb_upper/bb_middle/bb_lower columns. Free tier: only rsi populated.
+    columns:
+      - name: symbol
+        data_tests: [not_null]
+      - name: date
+        data_tests: [not_null]
+    data_tests:
+      - dbt_utils.unique_combination_of_columns:
+          combination_of_columns: [symbol, date]
+
+  - name: int_sentiment__daily
+    description: >
+      Daily mean sentiment and article_count per security. avg over NULL scores
+      stays NULL (never 0). Grain: (symbol, date).
+    columns:
+      - name: symbol
+        data_tests: [not_null]
+      - name: date
+        data_tests: [not_null]
+      - name: article_count
+        description: Number of articles that day (always >= 1 for rows that exist).
+        data_tests: [not_null]
+    data_tests:
+      - dbt_utils.unique_combination_of_columns:
+          combination_of_columns: [symbol, date]
+
+  - name: int_economic__daily
+    description: >
+      Macro indicators forward-filled onto the trading calendar (as-of join):
+      one row per trading date with real_gdp/inflation/unemployment. Forward-fill
+      is applied to macro indicators only, and documented (golden rule #8).
+    columns:
+      - name: date
+        description: Trading date (primary key).
+        data_tests: [not_null, unique]
+
+  - name: int_fundamentals__point_in_time
+    description: >
+      Point-in-time fundamentals from the SCD2 snapshot, with valid_from/valid_to
+      for as-of joins. Grain: (symbol, valid_from). The look-ahead-bias fix.
+    columns:
+      - name: symbol
+        data_tests: [not_null]
+      - name: valid_from
+        data_tests: [not_null]
+    data_tests:
+      - dbt_utils.unique_combination_of_columns:
+          combination_of_columns: [symbol, valid_from]
+
+  - name: int_sector__daily_performance
+    description: >
+      Each active security's sector-ETF daily return per trading date, mapped via
+      the security's latest sector and sector_etf_map. Grain: (symbol, date).
+      Free tier: sector_return is NULL where the sector's ETF isn't loaded.
+    columns:
+      - name: symbol
+        data_tests: [not_null]
+      - name: date
+        data_tests: [not_null]
+    data_tests:
+      - dbt_utils.unique_combination_of_columns:
+          combination_of_columns: [symbol, date]

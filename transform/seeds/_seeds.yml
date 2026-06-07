@@ -1,0 +1,29 @@
+version: 2
+
+seeds:
+  - name: security_watchlist
+    description: >
+      The security universe. `is_active` drives which symbols flow through the
+      models. Free tier: KO/JNJ/PG active; the rest are documented but inactive.
+    columns:
+      - name: symbol
+        description: Ticker (primary key).
+        data_tests: [not_null, unique]
+      - name: company_name
+        data_tests: [not_null]
+      - name: is_active
+        description: Whether the security is processed downstream.
+        data_tests: [not_null]
+
+  - name: sector_etf_map
+    description: >
+      Maps an Alpha Vantage sector (as it appears in company overview) to its
+      SPDR sector ETF, for sector-relative performance. Replaces the legacy
+      hardcoded Python dict.
+    columns:
+      - name: sector
+        description: Alpha Vantage sector name (uppercase).
+        data_tests: [not_null, unique]
+      - name: etf_symbol
+        description: SPDR sector ETF ticker.
+        data_tests: [not_null]
