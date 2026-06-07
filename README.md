@@ -29,20 +29,20 @@ It is a rebuild of an older project that mixed ML/app/infra and transformed in p
 
 ```mermaid
 flowchart TD
-    AV[Alpha Vantage API] -->|"Python 3.13: requests + pydantic validate + tenacity retry"| EL[extract/ EL layer]
-    EL -->|"archive raw JSON"| S3[(S3 raw zone<br/>endpoint/symbol/dt/response.json)]
-    EL -->|"idempotent upsert on grain"| RAW[(RDS Postgres: raw.* jsonb)]
-    RAW -->|dbt| STG[staging: stg_av__*]
-    STG --> INT[intermediate: int_*]
-    RAW -.SCD2.-> SNAP[snapshot: snap_company_fundamentals]
+    AV["Alpha Vantage API"] -->|"Python 3.13: requests + pydantic + tenacity"| EL["extract/ EL layer"]
+    EL -->|"archive raw JSON"| S3[("S3 raw zone<br>endpoint/symbol/dt/response.json")]
+    EL -->|"idempotent upsert on grain"| RAW[("RDS Postgres: raw.* jsonb")]
+    RAW -->|"dbt"| STG["staging: stg_av__*"]
+    STG --> INT["intermediate: int_*"]
+    RAW -.->|"SCD2"| SNAP["snapshot: snap_company_fundamentals"]
     SNAP --> INT
-    SEED[seeds: watchlist, sector_etf_map] --> INT
-    INT --> MARTS[marts: dim_date, dim_security,<br/>fct_daily_equity_metrics,<br/>mart_watchlist_daily, mart_risk_monitor]
-    MARTS --> HEX[Hex apps:<br/>Research · Risk · Leadership]
+    SEED["seeds: watchlist, sector_etf_map"] --> INT
+    INT --> MARTS["marts: dim_date, dim_security,<br>fct_daily_equity_metrics,<br>mart_watchlist_daily, mart_risk_monitor"]
+    MARTS --> HEX["Hex apps: Research / Risk / Leadership"]
 
-    AIRFLOW[Airflow DAG<br/>equities_daily] -.orchestrates.-> EL
-    AIRFLOW -.->|dbt build + test| MARTS
-    CI[GitHub Actions CI<br/>Postgres service + fixture] -.gates PRs.-> MARTS
+    AIRFLOW["Airflow DAG: equities_daily"] -.->|"orchestrates"| EL
+    AIRFLOW -.->|"dbt build + test"| MARTS
+    CI["GitHub Actions CI: Postgres service + fixture"] -.->|"gates PRs"| MARTS
 ```
 
 - **S3 is the immutable raw archive / replay source.** dbt-postgres transforms data *inside* RDS, so raw is loaded into RDS for dbt to run SQL against; S3 keeps the verbatim API responses for replay.
@@ -89,8 +89,17 @@ erDiagram
         numeric beta
         numeric reported_eps
     }
-    DIM_SECURITY { text symbol; text company_name; text sector; boolean is_active }
-    DIM_DATE { date date_day; boolean is_trading_day; integer quarter }
+    DIM_SECURITY {
+        text symbol
+        text company_name
+        text sector
+        boolean is_active
+    }
+    DIM_DATE {
+        date date_day
+        boolean is_trading_day
+        integer quarter
+    }
 ```
 
 Layers: `staging` (views, 1:1 with sources) → `intermediate` (returns, pivoted technicals, daily sentiment, forward-filled macro, point-in-time fundamentals, sector performance, reported earnings) → `marts` (dims as tables, fact as incremental). See `dbt docs generate` for full lineage.
@@ -180,7 +189,7 @@ Three Hex Community apps read `marts.*` only (governance story). Setup + the exa
 2. **Risk** — watchlist risk monitor: rolling vol, beta, max drawdown, distance from 52-week high (`mart_risk_monitor`).
 3. **Leadership** — watchlist performance: Day/WTD/MTD/YTD returns, top movers, sentiment snapshot (`mart_watchlist_daily`).
 
-> _Screenshots: TODO — capture once the Hex apps are connected to RDS._
+![Hex dashboard reading marts.* on RDS](docs/img/hex-dashboard.png)
 
 ---
 
