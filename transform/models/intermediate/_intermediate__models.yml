@@ -66,6 +66,20 @@ models:
       - dbt_utils.unique_combination_of_columns:
           combination_of_columns: [symbol, valid_from]
 
+  - name: int_earnings__reported
+    description: >
+      Quarterly earnings as point-in-time events (reported_date known). Grain:
+      (symbol, fiscal_date_ending). As-of joined by the fact so earnings never
+      appear before they were public.
+    columns:
+      - name: symbol
+        data_tests: [not_null]
+      - name: fiscal_date_ending
+        data_tests: [not_null]
+    data_tests:
+      - dbt_utils.unique_combination_of_columns:
+          combination_of_columns: [symbol, fiscal_date_ending]
+
   - name: int_sector__daily_performance
     description: >
       Each active security's sector-ETF daily return per trading date, mapped via

@@ -1,0 +1,180 @@
+version: 2
+
+models:
+  - name: dim_date
+    description: "Calendar dimension over the loaded price history. Grain: date_day."
+    config:
+      contract: {enforced: true}
+    columns:
+      - name: date_day
+        data_type: date
+        data_tests: [not_null, unique]
+      - name: day_of_week
+        data_type: integer
+      - name: day_name
+        data_type: text
+      - name: is_trading_day
+        data_type: boolean
+        data_tests: [not_null]
+      - name: has_prices
+        data_type: boolean
+      - name: week_of_year
+        data_type: integer
+      - name: month_number
+        data_type: integer
+      - name: month_name
+        data_type: text
+      - name: quarter
+        data_type: integer
+      - name: year_number
+        data_type: integer
+      - name: is_month_end
+        data_type: boolean
+
+  - name: dim_security
+    description: "Conformed security dimension. Grain: symbol."
+    config:
+      contract: {enforced: true}
+    columns:
+      - name: symbol
+        data_type: text
+        data_tests: [not_null, unique]
+      - name: company_name
+        data_type: text
+      - name: sector
+        data_type: text
+      - name: industry
+        data_type: text
+      - name: is_active
+        data_type: boolean
+        data_tests: [not_null]
+
+  - name: fct_daily_equity_metrics
+    description: >
+      One row per active security per trading day, fully enriched: prices,
+      returns, technicals, point-in-time fundamentals (as-of), daily sentiment,
+      macro context, sector performance, and latest earnings (as-of reported
+      date). Incremental on (symbol, date), contract-enforced. The deliverable.
+    config:
+      contract: {enforced: true}
+    columns:
+      - name: symbol
+        data_type: text
+        data_tests:
+          - not_null
+          - relationships: {to: ref('dim_security'), field: symbol}
+      - name: date
+        data_type: date
+        data_tests:
+          - not_null
+          - relationships: {to: ref('dim_date'), field: date_day}
+      - name: close
+        data_type: numeric
+        data_tests:
+          - not_null
+          - dbt_expectations.expect_column_values_to_be_between:
+              min_value: 0
+              strictly: true
+      - name: prev_close
+        data_type: numeric
+      - name: daily_return
+        data_type: numeric
+      - name: log_return
+        data_type: numeric
+      - name: return_5d
+        data_type: numeric
+      - name: return_20d
+        data_type: numeric
+      - name: return_60d
+        data_type: numeric
+      - name: volatility_20d
+        data_type: numeric
+      - name: high_52w
+        data_type: numeric
+      - name: low_52w
+        data_type: numeric
+      - name: rsi
+        data_type: numeric
+        data_tests:
+          - dbt_expectations.expect_column_values_to_be_between:
+              min_value: 0
+              max_value: 100
+              row_condition: "rsi is not null"
+      - name: macd
+        data_type: numeric
+      - name: macd_signal
+        data_type: numeric
+      - name: macd_hist
+        data_type: numeric
+      - name: adx
+        data_type: numeric
+      - name: bb_upper
+        data_type: numeric
+      - name: bb_middle
+        data_type: numeric
+      - name: bb_lower
+        data_type: numeric
+      - name: avg_ticker_sentiment
+        data_type: numeric
+      - name: avg_overall_sentiment
+        data_type: numeric
+      - name: article_count
+        data_type: integer
+        data_tests:
+          - dbt_expectations.expect_column_values_to_be_between:
+              min_value: 0
+      - name: real_gdp
+        data_type: numeric
+      - name: inflation
+        data_type: numeric
+      - name: unemployment
+        data_type: numeric
+      - name: sector
+        data_type: text
+      - name: sector_return
+        data_type: numeric
+      - name: market_cap
+        data_type: numeric
+      - name: pe_ratio
+        data_type: numeric
+      - name: dividend_yield
+        data_type: numeric
+        data_tests:
+          - dbt_expectations.expect_column_values_to_be_between:
+              min_value: 0
+              row_condition: "dividend_yield is not null"
+      - name: beta
+        data_type: numeric
+      - name: reported_eps
+        data_type: numeric
+      - name: earnings_surprise
+        data_type: numeric
+      - name: earnings_surprise_pct
+        data_type: numeric
+      - name: earnings_reported_date
+        data_type: date
+    data_tests:
+      - dbt_utils.unique_combination_of_columns:
+          combination_of_columns: [symbol, date]
+
+  - name: mart_watchlist_daily
+    description: "Leadership app: watchlist daily performance + period returns. Grain: (symbol, date)."
+    columns:
+      - name: symbol
+        data_tests: [not_null]
+      - name: date
+        data_tests: [not_null]
+    data_tests:
+      - dbt_utils.unique_combination_of_columns:
+          combination_of_columns: [symbol, date]
+
+  - name: mart_risk_monitor
+    description: "Risk app: rolling vol, beta, drawdown, distance from 52w high. Grain: (symbol, date)."
+    columns:
+      - name: symbol
+        data_tests: [not_null]
+      - name: date
+        data_tests: [not_null]
+    data_tests:
+      - dbt_utils.unique_combination_of_columns:
+          combination_of_columns: [symbol, date]
