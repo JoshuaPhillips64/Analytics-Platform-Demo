@@ -29,6 +29,22 @@ transform/logs/
 orchestration/logs/
 orchestration/plugins/__pycache__/
 
+# --- terraform ---
+# State holds the RDS master password in plaintext; tfvars holds secrets.
+**/.terraform/
+*.tfstate
+*.tfstate.*
+*.tfvars
+*.tfvars.json
+!*.tfvars.example
+crash.log
+crash.*.log
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+# Keep .terraform.lock.hcl committed for reproducible provider versions.
+
 # --- os / editor ---
 .DS_Store
 .idea/

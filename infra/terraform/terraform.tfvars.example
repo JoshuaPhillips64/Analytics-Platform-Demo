@@ -1,0 +1,30 @@
+# Copy to terraform.tfvars (gitignored) and fill in. Or export TF_VAR_* env vars.
+
+region      = "us-east-1"
+name_prefix = "equities-analytics"
+
+# --- RDS ---
+# Choose a strong master password; it lands in terraform.tfstate (gitignored).
+db_master_password = "CHANGE_ME_strong_password"
+
+# Allowlist YOUR public IP so you can psql from your laptop. Find it with:
+#   curl -s https://checkip.amazonaws.com
+# Then put it here as a /32. Add Hex egress IPs later (Phase 8).
+db_allowed_cidrs = ["203.0.113.10/32"]
+
+# Set false to keep RDS private (only the EC2 host can reach it). Hex/laptop
+# access then requires an SSH tunnel through the EC2 host.
+# db_publicly_accessible = true
+
+# --- EC2 ---
+# Leave SSH disabled and use SSM Session Manager (recommended). To enable SSH,
+# set an existing key pair and your IP:
+# ec2_key_name      = "my-keypair"
+# ssh_allowed_cidrs = ["203.0.113.10/32"]
+
+# --- Budget ---
+budget_notification_email = "jphillips@usserviceanimals.org"
+budget_amount             = 25
+
+# --- Optional SNS failure alerts (Phase 6) ---
+# enable_sns = true
