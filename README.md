@@ -15,13 +15,10 @@ It demonstrates the full analytics-engineering loop with the discipline that sep
 | Capability | Where it shows up |
 |---|---|
 | Multi-step ETL/ELT | Python extract → S3 archive → RDS raw load → dbt staging → intermediate → marts, gated end to end |
-| Robust dbt modelling | Layered project: sources, staging, intermediate, snapshots, seeds, marts, tests, contracts, docs |
+| dbt modelling | Layered project: sources, staging, intermediate, snapshots, seeds, marts, tests, contracts, docs |
 | Orchestration | Self-hosted Airflow DAG (`extract → freshness → snapshot → build → notify`) that halts on a failed test |
 | Version control + CI | Public repo, GitHub Actions running lint + `dbt build` (every model **and** test) on a Postgres service container; branch protection |
-| SQL + Python split | Python owns extract/load only; **all** transformation is SQL in dbt |
 | BI for cross-functional teams | Three Hex apps (Research, Risk, Leadership) reading `marts.*` only |
-
-It is a rebuild of an older project that mixed ML/app/infra and transformed in pandas. The working **API-extraction** code was kept and rewritten; the pandas transformation layer (which carried two real data bugs) was thrown away and rebuilt in dbt.
 
 ---
 
@@ -50,16 +47,14 @@ flowchart TD
 
 ---
 
-## Design decisions (the interesting part)
+## Design decisions 
 
 1. **Clean EL / ELT split.** Python only extracts and loads raw data; *all* cleaning, joining, aggregation, and typing live in dbt SQL. The old pipeline transformed in pandas and `to_sql(if_exists='replace')` — untestable and unversioned.
-2. **No fabricated values.** The legacy code injected `random.uniform(-1, 1)` for zero-valued MACD-hist. Here, missing values stay `NULL` — the `av_numeric` macro maps Alpha Vantage's `None`/`-`/`.`/`""` sentinels to `NULL`, and a singular test (`assert_no_fabricated_sentiment`) fails the build if sentiment is non-null when there were no articles.
-3. **Point-in-time correctness (the look-ahead-bias fix).** The legacy code stamped *today's* fundamentals onto *every historical date*. Here, fundamentals are captured as an **SCD2 snapshot** (`snap_company_fundamentals`) and joined **as-of** each trading date (`valid_from`/`valid_to`). A test (`assert_pit_fundamentals_no_overlap`) proves windows never overlap. Dates before the first snapshot capture get `NULL` fundamentals **by design** — we never back-stamp current values onto the past.
+3. **Point-in-time correctness (the look-ahead-bias fix).** Fundamentals are captured as an **SCD2 snapshot** (`snap_company_fundamentals`) and joined **as-of** each trading date (`valid_from`/`valid_to`). A test (`assert_pit_fundamentals_no_overlap`) proves windows never overlap. Dates before the first snapshot capture get `NULL` fundamentals **by design** — we never back-stamp current values onto the past.
 4. **Layering discipline.** `marts` never reference `staging`/`sources` directly — always through `intermediate` or dims. Enforced and verified against the dbt manifest.
 5. **Idempotent, incremental loads.** Raw loads upsert on the grain; `fct_daily_equity_metrics` is incremental (`delete+insert` on `(symbol, date)`). Re-running a day is safe and produces zero duplicates.
 6. **Contracts on the fact + dims** so a schema change can't silently break downstream BI.
-7. **Reference data in version control.** The sector→ETF mapping is a dbt seed (`sector_etf_map.csv`), not a hardcoded Python dict.
-8. **No hardcoded secrets.** Local `.env` (gitignored) and an EC2 IAM instance role on AWS; the legacy hardcoded AWS keys were dropped.
+7. **Reference data in version control.** The sector→ETF mapping is a dbt seed (`sector_etf_map.csv`).
 
 ---
 
